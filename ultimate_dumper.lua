@@ -6,8 +6,8 @@ gui.Name = "ComboDumperMemorySafe"
 gui.ResetOnSpawn = false
 
 local box = Instance.new("TextBox", gui)
-box.Size = UDim2.new(0.95, 0, 0.55, 0)
-box.Position = UDim2.new(0.025, 0, 0.25, 0)
+box.Size = UDim2.new(0.95, 0, 0.5, 0)
+box.Position = UDim2.new(0.025, 0, 0.28, 0)
 box.BackgroundColor3 = Color3.fromRGB(10, 10, 10)
 box.TextColor3 = Color3.new(1, 1, 1)
 box.Font = Enum.Font.Code
@@ -33,7 +33,7 @@ counterLabel.Visible = false
 
 -- Knappar
 local dumpBtn = Instance.new("TextButton", gui)
-dumpBtn.Size = UDim2.new(0.28, 0, 0.06, 0)
+dumpBtn.Size = UDim2.new(0.25, 0, 0.06, 0)
 dumpBtn.Position = UDim2.new(0.05, 0, 0.05, 0)
 dumpBtn.BackgroundColor3 = Color3.fromRGB(0, 150, 255)
 dumpBtn.TextColor3 = Color3.new(1, 1, 1)
@@ -42,8 +42,8 @@ dumpBtn.Font = Enum.Font.SourceSansBold
 dumpBtn.Text = "📦 Dumpa"
 
 local spyBtn = Instance.new("TextButton", gui)
-spyBtn.Size = UDim2.new(0.28, 0, 0.06, 0)
-spyBtn.Position = UDim2.new(0.36, 0, 0.05, 0)
+spyBtn.Size = UDim2.new(0.25, 0, 0.06, 0)
+spyBtn.Position = UDim2.new(0.32, 0, 0.05, 0)
 spyBtn.BackgroundColor3 = Color3.fromRGB(60, 60, 60)
 spyBtn.TextColor3 = Color3.new(1, 1, 1)
 spyBtn.TextScaled = true
@@ -51,16 +51,25 @@ spyBtn.Font = Enum.Font.SourceSansBold
 spyBtn.Text = "🕵️ Spion"
 
 local saveBtn = Instance.new("TextButton", gui)
-saveBtn.Size = UDim2.new(0.28, 0, 0.06, 0)
-saveBtn.Position = UDim2.new(0.67, 0, 0.05, 0)
+saveBtn.Size = UDim2.new(0.25, 0, 0.06, 0)
+saveBtn.Position = UDim2.new(0.59, 0, 0.05, 0)
 saveBtn.BackgroundColor3 = Color3.fromRGB(0, 200, 100)
 saveBtn.TextColor3 = Color3.new(1, 1, 1)
 saveBtn.TextScaled = true
 saveBtn.Font = Enum.Font.SourceSansBold
 saveBtn.Text = "💾 Spara"
 
--- Tillfällig batch-logg
-local logBuffer, lineCount, spying = {}, 0, false
+local toggleBtn = Instance.new("TextButton", gui)
+toggleBtn.Size = UDim2.new(0.08, 0, 0.06, 0)
+toggleBtn.Position = UDim2.new(0.87, 0, 0.05, 0)
+toggleBtn.BackgroundColor3 = Color3.fromRGB(100, 100, 100)
+toggleBtn.TextColor3 = Color3.new(1, 1, 1)
+toggleBtn.TextScaled = true
+toggleBtn.Font = Enum.Font.SourceSansBold
+toggleBtn.Text = "🔽"
+
+-- Logik
+local logBuffer, lineCount, spying, visible = {}, 0, false, false
 
 local function flushBuffer()
     if writefile and #logBuffer > 0 then
@@ -76,7 +85,16 @@ local function add(txt)
     if #logBuffer >= 300 then
         flushBuffer()
     end
+    if visible then
+        box.Text = (box.Text .. "\n" .. txt):sub(-4000)
+    end
 end
+
+toggleBtn.MouseButton1Click:Connect(function()
+    visible = not visible
+    box.Visible = visible
+    toggleBtn.Text = visible and "🔽" or "🔼"
+end)
 
 saveBtn.MouseButton1Click:Connect(function()
     flushBuffer()
@@ -84,7 +102,7 @@ saveBtn.MouseButton1Click:Connect(function()
     task.delay(2, function() saveBtn.Text = "💾 Spara" end)
 end)
 
--- Dumpknapp med memory-optimering
+-- Dump
 dumpBtn.MouseButton1Click:Connect(function()
     dumpBtn.Text = "⏳..."
     box.Visible = false
@@ -114,7 +132,6 @@ dumpBtn.MouseButton1Click:Connect(function()
         end
     end
 
-    -- Extra dump
     for _, obj in pairs(game:GetDescendants()) do
         if obj:IsA("Script") or obj:IsA("LocalScript") or obj:IsA("ModuleScript") or obj:IsA("ProximityPrompt") or obj:IsA("ClickDetector") or obj:IsA("Tool") then
             add("📦 " .. obj.ClassName .. " ➜ " .. obj:GetFullName())
@@ -126,14 +143,14 @@ dumpBtn.MouseButton1Click:Connect(function()
     dumpBtn.Text = "Klar ✔"
 end)
 
--- Spy med GUI-logg
-local box = box
+-- Spy
 local originalNamecall
 spyBtn.MouseButton1Click:Connect(function()
     spying = not spying
     spyBtn.Text = spying and "🛑 Stoppa" or "🕵️ Spion"
-    box.Visible = spying
-    counterLabel.Visible = not spying
+    box.Visible = true
+    counterLabel.Visible = false
+    visible = true
     if spying and not originalNamecall then
         originalNamecall = hookmetamethod(game, "__namecall", function(self, ...)
             local method = getnamecallmethod()
@@ -151,10 +168,7 @@ spyBtn.MouseButton1Click:Connect(function()
                     if i < #args then argDump ..= ", " end
                 end
                 local line = "["..method.."] " .. self:GetFullName() .. "(" .. argDump .. ")"
-                table.insert(logBuffer, line)
-                if spying then
-                    box.Text = (box.Text .. "\n" .. line):sub(-4000)
-                end
+                add(line)
             end
             return originalNamecall(self, ...)
         end)
