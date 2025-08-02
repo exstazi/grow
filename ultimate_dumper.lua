@@ -2,7 +2,7 @@ local player = game.Players.LocalPlayer
 
 -- GUI
 local gui = Instance.new("ScreenGui", player.PlayerGui)
-gui.Name = "ComboDumperAppendSafe"
+gui.Name = "RotatingDumpGui"
 gui.ResetOnSpawn = false
 
 local box = Instance.new("TextBox", gui)
@@ -17,7 +17,7 @@ box.MultiLine = true
 box.TextWrapped = true
 box.TextEditable = false
 box.TextYAlignment = Enum.TextYAlignment.Top
-box.Text = "[🚀] Kombo-Dumper: APPEND om möjligt"
+box.Text = "[🚀] Rotations-dumper redo..."
 box.Visible = true
 
 -- Knappar
@@ -39,15 +39,6 @@ spyBtn.TextScaled = true
 spyBtn.Font = Enum.Font.SourceSansBold
 spyBtn.Text = "🕵️ Spion"
 
-local saveBtn = Instance.new("TextButton", gui)
-saveBtn.Size = UDim2.new(0.28, 0, 0.06, 0)
-saveBtn.Position = UDim2.new(0.67, 0, 0.05, 0)
-saveBtn.BackgroundColor3 = Color3.fromRGB(0, 200, 100)
-saveBtn.TextColor3 = Color3.new(1, 1, 1)
-saveBtn.TextScaled = true
-saveBtn.Font = Enum.Font.SourceSansBold
-saveBtn.Text = "💾 Spara"
-
 local toggleBtn = Instance.new("TextButton", gui)
 toggleBtn.Size = UDim2.new(0.1, 0, 0.05, 0)
 toggleBtn.Position = UDim2.new(0.9, 0, 0.87, 0)
@@ -57,23 +48,21 @@ toggleBtn.TextScaled = true
 toggleBtn.Font = Enum.Font.SourceSans
 toggleBtn.Text = "🔽"
 
--- Logg
-local guiLog, fullLog, lineCount, spying, visible = {}, {}, 0, false, true
-local function flush()
-    local dump = table.concat(fullLog, "\n") .. "\n"
-    if appendfile then
-        pcall(function() appendfile("dump.txt", dump) end)
-    elseif writefile then
-        pcall(function()
-            local prev = ""
-            local exists = pcall(function() prev = readfile("dump.txt") end)
-            writefile("dump.txt", prev .. dump)
-        end)
-    else
-        box.Text = box.Text .. "\n[❌] Varken appendfile eller writefile finns"
+-- Logik
+local guiLog, fullLog, lineCount, visible = {}, {}, 0, true
+local fileIndex = 1
+
+local function flushToNewFile()
+    local fileName = "dump_" .. fileIndex .. ".txt"
+    local content = table.concat(fullLog, "\n") .. "\n"
+    if writefile then
+        pcall(function() writefile(fileName, content) end)
+        table.insert(guiLog, "[💾] Sparade: " .. fileName)
+        if #guiLog > 300 then table.remove(guiLog, 1) end
+        box.Text = table.concat(guiLog, "\n")
     end
     fullLog = {}
-    guiLog = {}
+    fileIndex += 1
 end
 
 local function add(txt)
@@ -82,7 +71,7 @@ local function add(txt)
     table.insert(guiLog, txt)
     if #guiLog > 300 then table.remove(guiLog, 1) end
     box.Text = table.concat(guiLog, "\n")
-    if lineCount % 100 == 0 then flush() end
+    if lineCount % 1000 == 0 then flushToNewFile() end
 end
 
 toggleBtn.MouseButton1Click:Connect(function()
@@ -91,20 +80,16 @@ toggleBtn.MouseButton1Click:Connect(function()
     toggleBtn.Text = visible and "🔽" or "🔼"
 end)
 
-saveBtn.MouseButton1Click:Connect(function()
-    flush()
-    saveBtn.Text = "✔ Sparad"
-    task.delay(2, function() saveBtn.Text = "💾 Spara" end)
-end)
-
 -- Dump
 dumpBtn.MouseButton1Click:Connect(function()
-    dumpBtn.Text = "⏳..."
-    add("[🧠] getgc-dump startar...")
+    dumpBtn.Text = "⏳ Dumpar..."
+    add("[🧠] Startar getgc-dump...")
 
     local count = 0
+    local dumped = {}
+
     for _, f in pairs(getgc(true)) do
-        if typeof(f) == "function" and not is_synapse_function and not isexecutorclosure(f) then
+        if typeof(f) == "function" and not is_synapse_function(f) then
             local ok, consts = pcall(getconstants, f)
             if ok then
                 local infoOk, info = pcall(debug.getinfo, f)
@@ -112,25 +97,29 @@ dumpBtn.MouseButton1Click:Connect(function()
                     add("📄 [" .. (info.short_src or info.source) .. "]")
                 end
                 for _, c in pairs(consts) do
-                    if typeof(c) == "string" and #c < 200 then
+                    if typeof(c) == "string" and not dumped[c] then
+                        dumped[c] = true
                         add("🧠 " .. c)
+                        count += 1
+                        if count % 50 == 0 then
+                            add("🔄 Antal: " .. count)
+                            task.wait(0.01)
+                        end
                     end
                 end
             end
-            count += 1
-            if count % 10 == 0 then
-                add("🔄 Funktioner behandlade: " .. count)
-                task.wait(0.05)
-            end
         end
     end
-    add("[✅] Dump klar.")
-    dumpBtn.Text = "Klar ✔"
+
+    add("[✅] Klar – totalt " .. count .. " rader")
+    flushToNewFile()
+    dumpBtn.Text = "KLAR ✔"
 end)
 
 -- RemoteSpy
 local originalNamecall
 spyBtn.MouseButton1Click:Connect(function()
+    local spying = false
     spying = not spying
     spyBtn.Text = spying and "🛑 Stoppa" or "🕵️ Spion"
     if spying and not originalNamecall then
@@ -149,8 +138,7 @@ spyBtn.MouseButton1Click:Connect(function()
                     end
                     if i < #args then argDump ..= ", " end
                 end
-                local line = "["..method.."] " .. self:GetFullName() .. "(" .. argDump .. ")"
-                add(line)
+                add("["..method.."] " .. self:GetFullName() .. "(" .. argDump .. ")")
             end
             return originalNamecall(self, ...)
         end)
