@@ -4,6 +4,7 @@ local player = game.Players.LocalPlayer
 local gui = Instance.new("ScreenGui", player.PlayerGui)
 gui.Name = "ComboDumperMemorySafe"
 gui.ResetOnSpawn = false
+gui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
 
 local box = Instance.new("TextBox", gui)
 box.Size = UDim2.new(0.95, 0, 0.5, 0)
@@ -19,6 +20,7 @@ box.TextEditable = false
 box.TextYAlignment = Enum.TextYAlignment.Top
 box.Text = "[🚀] Kombo-Dumper (memory safe)..."
 box.Visible = false
+box.ZIndex = 5
 
 -- Räknare
 local counterLabel = Instance.new("TextLabel", gui)
@@ -60,16 +62,18 @@ saveBtn.Font = Enum.Font.SourceSansBold
 saveBtn.Text = "💾 Spara"
 
 local toggleBtn = Instance.new("TextButton", gui)
-toggleBtn.Size = UDim2.new(0.08, 0, 0.06, 0)
-toggleBtn.Position = UDim2.new(0.87, 0, 0.05, 0)
-toggleBtn.BackgroundColor3 = Color3.fromRGB(100, 100, 100)
-toggleBtn.TextColor3 = Color3.new(1, 1, 1)
+toggleBtn.Size = UDim2.new(0.08, 0, 0.05, 0)
+toggleBtn.Position = UDim2.new(0.91, 0, 0.25, 0)
+toggleBtn.BackgroundColor3 = Color3.fromRGB(255, 200, 0)
+toggleBtn.TextColor3 = Color3.new(0, 0, 0)
 toggleBtn.TextScaled = true
 toggleBtn.Font = Enum.Font.SourceSansBold
 toggleBtn.Text = "🔽"
+toggleBtn.ZIndex = 10
+toggleBtn.Visible = true
 
 -- Logik
-local logBuffer, lineCount, spying, visible = {}, 0, false, false
+local logBuffer, lineCount, spying, visible = {}, 0, false, true
 
 local function flushBuffer()
     if writefile and #logBuffer > 0 then
