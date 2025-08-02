@@ -3,14 +3,14 @@ local player = game.Players.LocalPlayer
 
 -- GUI
 local gui = Instance.new("ScreenGui", player.PlayerGui)
-gui.Name = "SuperDumpGui"
+gui.Name = "MobilDumpSecure"
 gui.ResetOnSpawn = false
 
 local box = Instance.new("TextBox", gui)
-box.Size = UDim2.new(0.95, 0, 0.65, 0)
+box.Size = UDim2.new(0.95, 0, 0.6, 0)
 box.Position = UDim2.new(0.025, 0, 0.2, 0)
-box.BackgroundColor3 = Color3.fromRGB(10, 10, 10)
-box.TextColor3 = Color3.new(1,1,1)
+box.BackgroundColor3 = Color3.fromRGB(15, 15, 15)
+box.TextColor3 = Color3.new(1, 1, 1)
 box.Font = Enum.Font.Code
 box.TextSize = 14
 box.ClearTextOnFocus = false
@@ -18,128 +18,114 @@ box.MultiLine = true
 box.TextWrapped = true
 box.TextEditable = false
 box.TextYAlignment = Enum.TextYAlignment.Top
-box.Text = "[🧠] Superdump redo – klicka för att börja"
-box.Visible = true
+box.Text = "[📲] Klar. Tryck på en knapp."
 
 local dumpBtn = Instance.new("TextButton", gui)
-dumpBtn.Size = UDim2.new(0.6, 0, 0.08, 0)
-dumpBtn.Position = UDim2.new(0.2, 0, 0.05, 0)
+dumpBtn.Size = UDim2.new(0.45, 0, 0.08, 0)
+dumpBtn.Position = UDim2.new(0.05, 0, 0.05, 0)
 dumpBtn.BackgroundColor3 = Color3.fromRGB(0, 150, 255)
-dumpBtn.TextColor3 = Color3.new(1,1,1)
+dumpBtn.TextColor3 = Color3.new(1, 1, 1)
 dumpBtn.TextScaled = true
 dumpBtn.Font = Enum.Font.SourceSansBold
-dumpBtn.Text = "SUPERDUMPA"
+dumpBtn.Text = "DUMPA SÄKERT"
 
-local toggle = Instance.new("TextButton", gui)
-toggle.Size = UDim2.new(0.15, 0, 0.05, 0)
-toggle.Position = UDim2.new(0.82, 0, 0.9, 0)
-toggle.BackgroundColor3 = Color3.fromRGB(60, 60, 60)
-toggle.TextColor3 = Color3.new(1,1,1)
-toggle.TextScaled = true
-toggle.Font = Enum.Font.SourceSans
-toggle.Text = "🔽"
+local showBtn = Instance.new("TextButton", gui)
+showBtn.Size = UDim2.new(0.45, 0, 0.08, 0)
+showBtn.Position = UDim2.new(0.5, 0, 0.05, 0)
+showBtn.BackgroundColor3 = Color3.fromRGB(60, 60, 60)
+showBtn.TextColor3 = Color3.new(1, 1, 1)
+showBtn.TextScaled = true
+showBtn.Font = Enum.Font.SourceSansBold
+showBtn.Text = "📂 VISA DUMP.TXT"
 
--- Toggle dump-ruta
-local shown = true
-toggle.MouseButton1Click:Connect(function()
-    shown = not shown
-    box.Visible = shown
-    toggle.Text = shown and "🔽" or "🔼"
-end)
-
--- Logg
 local log = {}
-local logLine = function(str)
-    table.insert(log, str)
-end
+local lineCount = 0
 
--- dump till GUI
-local function updateBox()
-    local maxLines = 100
-    local view = {}
-    for i = math.max(1, #log - maxLines + 1), #log do
-        table.insert(view, log[i])
+local function add(text)
+    lineCount += 1
+    table.insert(log, text)
+    if #log > 300 then
+        table.remove(log, 1)
     end
-    box.Text = table.concat(view, "\n")
+    box.Text = table.concat(log, "\n")
+
+    if writefile and lineCount % 200 == 0 then
+        pcall(function()
+            writefile("dump.txt", table.concat(log, "\n"))
+        end)
+    end
 end
 
--- Superdump
-local function superDump()
+dumpBtn.MouseButton1Click:Connect(function()
     dumpBtn.Text = "DUMPAR..."
-    logLine("[⏳] Startar superdump...")
-    updateBox()
-    task.wait(0.1)
+    add("[⏳] Startar dump med skydd...")
 
-    local count = 0
-    local dumped = {}
+    local okCount, failCount = 0, 0
 
-    -- 1. Dumpa spelobjekt
-    for _, obj in ipairs(game:GetDescendants()) do
-        local c = obj.ClassName
-        if obj:IsA("RemoteEvent") or obj:IsA("RemoteFunction") then
-            logLine("📡 "..c.." ➜ "..obj:GetFullName())
-        elseif obj:IsA("TextButton") or obj:IsA("ImageButton") then
-            logLine("🖱️ "..c.." ➜ "..obj:GetFullName())
-        elseif obj:IsA("ModuleScript") or obj:IsA("LocalScript") or obj:IsA("Script") then
-            logLine("📚 "..c.." ➜ "..obj:GetFullName())
-        elseif obj:IsA("Tool") or obj:IsA("ProximityPrompt") or obj:IsA("ClickDetector") or obj:IsA("BindableEvent") or obj:IsA("BindableFunction") then
-            logLine("🧲 "..c.." ➜ "..obj:GetFullName())
-        end
-        count += 1
-        if count % 200 == 0 then
-            updateBox()
-            task.wait(0.01)
-        end
-    end
-
-    -- 2. Dumpa getgc-konstanter
-    logLine("\n[🧠] getgc + getconstants börjar...")
-    updateBox()
-
-    local gcCount = 0
-    for _, func in pairs(getgc(true)) do
-        if typeof(func) == "function" and not is_synapse_function(func) then
-            local ok, consts = pcall(getconstants, func)
-            if ok and consts then
-                for _, c in pairs(consts) do
-                    if typeof(c) == "string" and not dumped[c] then
-                        dumped[c] = true
-                        logLine("🔎 " .. c)
-                        gcCount += 1
+    if getgc then
+        for _, f in pairs(getgc(true)) do
+            if typeof(f) == "function" then
+                local ok, constants = pcall(getconstants, f)
+                if ok and constants then
+                    okCount += 1
+                    for _, c in pairs(constants) do
+                        if typeof(c) == "string" then
+                            add("🧠 "..c)
+                        end
                     end
+                else
+                    failCount += 1
                 end
+                if okCount % 100 == 0 then task.wait(0.1) end
             end
         end
-        if gcCount % 200 == 0 then
-            updateBox()
-            task.wait(0.01)
+        add("[✔] getgc klar. Lyckades: "..okCount.." | Misslyckades: "..failCount)
+    else
+        add("[⚠️] getgc saknas")
+    end
+
+    add("[📡] RemoteEvents & RemoteFunctions:")
+    for _, obj in pairs(game:GetDescendants()) do
+        if obj:IsA("RemoteEvent") or obj:IsA("RemoteFunction") then
+            add("📡 "..obj:GetFullName())
         end
     end
 
-    logLine("\n✅ KLAR – "..#log.." rader totalt.")
-    updateBox()
-    writefile("superdump.txt", table.concat(log, "\n"))
+    add("[🖱️] GUI-knappar:")
+    for _, btn in pairs(game:GetDescendants()) do
+        if btn:IsA("TextButton") or btn:IsA("ImageButton") then
+            add("🖱️ "..btn:GetFullName())
+        end
+    end
+
+    add("[📚] ModuleScripts, Tools, Prompts:")
+    for _, obj in pairs(game:GetDescendants()) do
+        if obj:IsA("ModuleScript") or obj:IsA("Tool") or obj:IsA("ProximityPrompt") or obj:IsA("BindableEvent") or obj:IsA("BindableFunction") then
+            add("📦 "..obj:GetFullName())
+        end
+    end
+
     dumpBtn.Text = "KLAR ✔"
-    dumpBtn.BackgroundColor3 = Color3.fromRGB(0, 170, 0)
-end
+    dumpBtn.BackgroundColor3 = Color3.fromRGB(0, 200, 0)
 
--- Spara manuellt-knapp
-local saveBtn = Instance.new("TextButton", gui)
-saveBtn.Size = UDim2.new(0.25, 0, 0.05, 0)
-saveBtn.Position = UDim2.new(0.05, 0, 0.9, 0)
-saveBtn.BackgroundColor3 = Color3.fromRGB(30, 150, 30)
-saveBtn.TextColor3 = Color3.new(1,1,1)
-saveBtn.TextScaled = true
-saveBtn.Font = Enum.Font.SourceSansBold
-saveBtn.Text = "💾 SPARA"
-
-saveBtn.MouseButton1Click:Connect(function()
-    if #log > 0 then
-        writefile("superdump.txt", table.concat(log, "\n"))
-        box.Text = box.Text .. "\n[💾] Sparat manuellt!"
-    else
-        box.Text = box.Text .. "\n[⚠️] Ingen dump att spara ännu!"
+    if writefile then
+        pcall(function()
+            writefile("dump.txt", table.concat(log, "\n"))
+        end)
+        add("[💾] Sparad till dump.txt")
     end
 end)
 
-dumpBtn.MouseButton1Click:Connect(superDump)
+-- VISAR INNEHÅLL FRÅN dump.txt
+showBtn.MouseButton1Click:Connect(function()
+    if readfile then
+        local ok, content = pcall(readfile, "dump.txt")
+        if ok and content then
+            box.Text = "[📂] Innehåll från dump.txt:\n\n" .. content
+        else
+            box.Text = "[❌] Kunde inte läsa dump.txt"
+        end
+    else
+        box.Text = "[⚠️] readfile stöds inte i denna executor."
+    end
+end)
