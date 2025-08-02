@@ -2,7 +2,7 @@ local player = game.Players.LocalPlayer
 
 -- GUI
 local gui = Instance.new("ScreenGui", player.PlayerGui)
-gui.Name = "ComboDumperToggle"
+gui.Name = "ComboDumperSafe"
 gui.ResetOnSpawn = false
 
 local box = Instance.new("TextBox", gui)
@@ -17,19 +17,8 @@ box.MultiLine = true
 box.TextWrapped = true
 box.TextEditable = false
 box.TextYAlignment = Enum.TextYAlignment.Top
-box.Text = "[🚀] Kombo-Dumper (console toggle)..."
-box.Visible = false -- döljs tills du spionerar
-
--- Räkneetikett
-local counterLabel = Instance.new("TextLabel", gui)
-counterLabel.Size = UDim2.new(0.9, 0, 0.06, 0)
-counterLabel.Position = UDim2.new(0.05, 0, 0.83, 0)
-counterLabel.BackgroundTransparency = 1
-counterLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
-counterLabel.TextScaled = true
-counterLabel.Font = Enum.Font.SourceSansBold
-counterLabel.Text = ""
-counterLabel.Visible = false
+box.Text = "[🚀] MOBIL-SÄKER Kombo-Dumper laddad..."
+box.Visible = true
 
 -- Knappar
 local dumpBtn = Instance.new("TextButton", gui)
@@ -59,8 +48,17 @@ saveBtn.TextScaled = true
 saveBtn.Font = Enum.Font.SourceSansBold
 saveBtn.Text = "💾 Spara"
 
--- Loggar
-local guiLog, fullLog, lineCount, spying = {}, {}, 0, false
+local toggleBtn = Instance.new("TextButton", gui)
+toggleBtn.Size = UDim2.new(0.1, 0, 0.05, 0)
+toggleBtn.Position = UDim2.new(0.9, 0, 0.87, 0)
+toggleBtn.BackgroundColor3 = Color3.fromRGB(100, 100, 100)
+toggleBtn.TextColor3 = Color3.new(1, 1, 1)
+toggleBtn.TextScaled = true
+toggleBtn.Font = Enum.Font.SourceSans
+toggleBtn.Text = "🔽"
+
+-- Logg
+local guiLog, fullLog, lineCount, spying, visible = {}, {}, 0, false, true
 
 local function add(txt)
     lineCount += 1
@@ -69,6 +67,12 @@ local function add(txt)
     if #guiLog > 300 then table.remove(guiLog, 1) end
     box.Text = table.concat(guiLog, "\n")
 end
+
+toggleBtn.MouseButton1Click:Connect(function()
+    visible = not visible
+    box.Visible = visible
+    toggleBtn.Text = visible and "🔽" or "🔼"
+end)
 
 saveBtn.MouseButton1Click:Connect(function()
     if writefile then
@@ -82,12 +86,10 @@ saveBtn.MouseButton1Click:Connect(function()
     end
 end)
 
--- Dumpa med räknare istället för konsol
+-- Dumpa: med task.wait och tydlig progress
 dumpBtn.MouseButton1Click:Connect(function()
     dumpBtn.Text = "⏳..."
-    box.Visible = false
-    counterLabel.Visible = true
-    counterLabel.Text = "🔄 Startar dump..."
+    add("[🧠] Säker getgc-dump startar...")
 
     local count = 0
     for _, f in pairs(getgc(true)) do
@@ -96,40 +98,39 @@ dumpBtn.MouseButton1Click:Connect(function()
             if ok then
                 local infoOk, info = pcall(debug.getinfo, f)
                 if infoOk and info and info.source then
-                    table.insert(fullLog, "📄 [" .. (info.short_src or info.source) .. "]")
+                    add("📄 [" .. (info.short_src or info.source) .. "]")
                 end
                 for _, c in pairs(consts) do
                     if typeof(c) == "string" and #c < 200 then
-                        table.insert(fullLog, "🧠 " .. c)
+                        add("🧠 " .. c)
                     end
                 end
             end
             count += 1
             if count % 10 == 0 then
-                counterLabel.Text = "🔄 Funktioner: " .. count
+                add("🔄 Funktioner behandlade: " .. count)
                 task.wait(0.05)
             end
         end
     end
 
-    -- Extra objekt
+    -- Extra dump
+    add("[📜] Script & prompt-data:")
     for _, obj in pairs(game:GetDescendants()) do
         if obj:IsA("Script") or obj:IsA("LocalScript") or obj:IsA("ModuleScript") or obj:IsA("ProximityPrompt") or obj:IsA("ClickDetector") or obj:IsA("Tool") then
-            table.insert(fullLog, "📦 " .. obj.ClassName .. " ➜ " .. obj:GetFullName())
+            add("📦 " .. obj.ClassName .. " ➜ " .. obj:GetFullName())
         end
     end
 
-    counterLabel.Text = "✅ Dump klar – " .. count .. " funktioner"
+    add("[✅] Full dump klar.")
     dumpBtn.Text = "Klar ✔"
 end)
 
--- Spy visar logg igen
+-- Spy på RemoteEvents
 local originalNamecall
 spyBtn.MouseButton1Click:Connect(function()
     spying = not spying
     spyBtn.Text = spying and "🛑 Stoppa" or "🕵️ Spion"
-    box.Visible = spying
-    counterLabel.Visible = not spying
     if spying and not originalNamecall then
         originalNamecall = hookmetamethod(game, "__namecall", function(self, ...)
             local method = getnamecallmethod()
