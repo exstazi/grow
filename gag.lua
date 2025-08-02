@@ -1,32 +1,48 @@
-local buttons = {
-	SeedButton = function()
-		game.Players.LocalPlayer.PlayerGui.UI.Seed_Shop.Main.Visible = true
-	end,
-	SellButton = function()
-		game.Players.LocalPlayer.PlayerGui.UI.SellPrompt.Visible = true
-	end,
-	ToolButton = function()
-		require(game.ReplicatedStorage.Modules.ToolShopController).open()
-	end,
-	FertButton = function()
-		require(game.ReplicatedStorage.Modules.FertilizerShopController).open()
-	end,
-	PetButton = function()
-		require(game.ReplicatedStorage.Modules.ActivePetsUIController).open()
-	end,
-	QuestButton = function()
-		game.Players.LocalPlayer.PlayerGui.UI.QuestUI.Visible = true
-	end,
-	EventButton = function()
-		game.Players.LocalPlayer.PlayerGui.UI.Event_UI.Visible = true
-	end,
-}
+-- SEED SHOP
+SeedButton.MouseButton1Click:Connect(function()
+	pcall(function()
+		require(game.ReplicatedStorage.Modules.SeedShopController).open()
+	end)
+end)
 
-for name, action in pairs(buttons) do
-	local button = script.Parent:FindFirstChild(name)
-	if button then
-		button.MouseButton1Click:Connect(function()
-			pcall(action)
-		end)
-	end
-end
+-- SELL PROMPT
+SellButton.MouseButton1Click:Connect(function()
+	pcall(function()
+		game.Players.LocalPlayer.PlayerGui.UI.SellPrompt.Visible = true
+	end)
+end)
+
+-- TOOL SHOP
+ToolButton.MouseButton1Click:Connect(function()
+	pcall(function()
+		require(game.ReplicatedStorage.Modules.ToolShopController).open()
+	end)
+end)
+
+-- FERTILIZER SHOP
+FertButton.MouseButton1Click:Connect(function()
+	pcall(function()
+		require(game.ReplicatedStorage.Modules.FertilizerShopController).open()
+	end)
+end)
+
+-- PET SHOP
+PetButton.MouseButton1Click:Connect(function()
+	pcall(function()
+		require(game.ReplicatedStorage.Modules.ActivePetsUIController).open()
+	end)
+end)
+
+-- QUEST
+QuestButton.MouseButton1Click:Connect(function()
+	pcall(function()
+		game.Players.LocalPlayer.PlayerGui.UI.QuestUI.Visible = true
+	end)
+end)
+
+-- EVENT
+EventButton.MouseButton1Click:Connect(function()
+	pcall(function()
+		game.Players.LocalPlayer.PlayerGui.UI.Event_UI.Visible = true
+	end)
+end)
