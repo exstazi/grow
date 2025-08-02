@@ -2,7 +2,7 @@ local player = game.Players.LocalPlayer
 
 -- GUI-setup
 local gui = Instance.new("ScreenGui", player.PlayerGui)
-gui.Name = "ComboDumper"
+gui.Name = "ComboDumperFull"
 gui.ResetOnSpawn = false
 
 local box = Instance.new("TextBox", gui)
@@ -17,7 +17,7 @@ box.MultiLine = true
 box.TextWrapped = true
 box.TextEditable = false
 box.TextYAlignment = Enum.TextYAlignment.Top
-box.Text = "[🚀] Kombo-dumper laddad..."
+box.Text = "[🚀] Kombo-dumper med FULL LOGG aktiv..."
 box.Visible = true
 
 -- Knappar
@@ -57,14 +57,15 @@ toggleBtn.TextScaled = true
 toggleBtn.Font = Enum.Font.SourceSans
 toggleBtn.Text = "🔽"
 
--- Variabler
-local log, lineCount, spying, visible = {}, 0, false, true
+-- Loggar
+local guiLog, fullLog, lineCount, spying, visible = {}, {}, 0, false, true
 
 local function add(txt)
     lineCount += 1
-    table.insert(log, txt)
-    if #log > 300 then table.remove(log, 1) end
-    box.Text = table.concat(log, "\n")
+    table.insert(fullLog, txt)
+    table.insert(guiLog, txt)
+    if #guiLog > 300 then table.remove(guiLog, 1) end
+    box.Text = table.concat(guiLog, "\n")
 end
 
 toggleBtn.MouseButton1Click:Connect(function()
@@ -76,7 +77,7 @@ end)
 saveBtn.MouseButton1Click:Connect(function()
     if writefile then
         pcall(function()
-            writefile("dump.txt", table.concat(log, "\n"))
+            writefile("dump.txt", table.concat(fullLog, "\n"))
             saveBtn.Text = "✔ Sparad"
             task.delay(2, function() saveBtn.Text = "💾 Spara" end)
         end)
