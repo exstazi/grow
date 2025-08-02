@@ -1,8 +1,8 @@
 local player = game.Players.LocalPlayer
 
--- GUI
+-- GUI Setup
 local gui = Instance.new("ScreenGui", player.PlayerGui)
-gui.Name = "SuperDumpGUI"
+gui.Name = "SuperDumpFinal"
 gui.ResetOnSpawn = false
 
 local box = Instance.new("TextBox", gui)
@@ -17,9 +17,9 @@ box.MultiLine = true
 box.TextWrapped = true
 box.TextEditable = false
 box.TextYAlignment = Enum.TextYAlignment.Top
-box.Text = "[🚀] SUPERDUMP laddad – redo..."
+box.Text = "[🚀] SUPERDUMP FINAL laddad – redo..."
 box.Visible = true
-box.ZIndex = 2
+box.ZIndex = 5
 
 local toggleBtn = Instance.new("TextButton", gui)
 toggleBtn.Size = UDim2.new(0.08, 0, 0.05, 0)
@@ -29,7 +29,7 @@ toggleBtn.TextColor3 = Color3.new(0, 0, 0)
 toggleBtn.TextScaled = true
 toggleBtn.Font = Enum.Font.SourceSansBold
 toggleBtn.Text = "🔽"
-toggleBtn.ZIndex = 3
+toggleBtn.ZIndex = 6
 
 local dumpBtn = Instance.new("TextButton", gui)
 dumpBtn.Size = UDim2.new(0.3, 0, 0.06, 0)
@@ -39,7 +39,7 @@ dumpBtn.TextColor3 = Color3.new(1, 1, 1)
 dumpBtn.TextScaled = true
 dumpBtn.Font = Enum.Font.SourceSansBold
 dumpBtn.Text = "📦 Dumpa"
-dumpBtn.ZIndex = 2
+dumpBtn.ZIndex = 5
 
 local saveBtn = Instance.new("TextButton", gui)
 saveBtn.Size = UDim2.new(0.3, 0, 0.06, 0)
@@ -49,16 +49,19 @@ saveBtn.TextColor3 = Color3.new(1, 1, 1)
 saveBtn.TextScaled = true
 saveBtn.Font = Enum.Font.SourceSansBold
 saveBtn.Text = "💾 Spara"
-saveBtn.ZIndex = 2
+saveBtn.ZIndex = 5
 
--- Logg
+-- Logik
 local log = {}
 local visible = true
 
 local function add(txt)
     table.insert(log, txt)
-    local view = log[#log - 250] and table.concat(log, "\n", #log - 250) or table.concat(log, "\n")
-    box.Text = view
+    if #log % 200 == 0 then
+        local view = log[#log - 199] and table.concat(log, "\n", #log - 199) or table.concat(log, "\n")
+        box.Text = view
+        task.wait(0.01)
+    end
 end
 
 toggleBtn.MouseButton1Click:Connect(function()
@@ -78,19 +81,22 @@ saveBtn.MouseButton1Click:Connect(function()
     end
 end)
 
+-- Dumpfunktion
 dumpBtn.MouseButton1Click:Connect(function()
-    dumpBtn.Text = "⏳..."
-    add("[🔍] Börjar getgc + objekt-dump...")
+    dumpBtn.Text = "⏳ Dumpar..."
+    add("[🔍] Börjar objekt-dump...")
 
-    -- game:GetDescendants
     for _, obj in pairs(game:GetDescendants()) do
-        if obj:IsA("RemoteEvent") or obj:IsA("RemoteFunction") or obj:IsA("BindableFunction") or obj:IsA("BindableEvent") or obj:IsA("Script") or obj:IsA("LocalScript") or obj:IsA("ModuleScript") then
+        if obj:IsA("RemoteEvent") or obj:IsA("RemoteFunction") or obj:IsA("BindableFunction")
+        or obj:IsA("BindableEvent") or obj:IsA("Script") or obj:IsA("LocalScript")
+        or obj:IsA("ModuleScript") or obj:IsA("Tool") or obj:IsA("ProximityPrompt") then
             add("📦 " .. obj.ClassName .. " ➜ " .. obj:GetFullName())
         end
     end
 
-    -- getgc
+    add("[🔬] Börjar getgc-dump...")
     local count = 0
+
     for _, f in pairs(getgc(true)) do
         if typeof(f) == "function" and not isexecutorclosure(f) then
             local ok, consts = pcall(getconstants, f)
@@ -99,16 +105,13 @@ dumpBtn.MouseButton1Click:Connect(function()
                     if typeof(c) == "string" and #c < 200 then
                         add("🧠 " .. c)
                         count += 1
-                        if count % 50 == 0 then
-                            add("🔄 "..count.." konstanter...")
-                            task.wait(0.01)
-                        end
+                        if count % 50 == 0 then add("🔄 "..count.." konstanter...") end
                     end
                 end
             end
         end
     end
 
-    add("[✅] SUPERDUMP KLAR – Totalt: "..count.." konstanter")
+    add("[✅] DUMP KLAR – "..count.." konstanter")
     dumpBtn.Text = "KLAR ✔"
 end)
