@@ -17,7 +17,7 @@ box.MultiLine = true
 box.TextWrapped = true
 box.TextEditable = false
 box.TextYAlignment = Enum.TextYAlignment.Top
-box.Text = "[🚀] MOBIL-SÄKER Kombo-Dumper laddad..."
+box.Text = "[🚀] Kombo-Dumper (autosave med kontroll)..."
 box.Visible = true
 
 -- Knappar
@@ -61,12 +61,15 @@ toggleBtn.Text = "🔽"
 local guiLog, fullLog, lineCount, spying, visible = {}, {}, 0, false, true
 
 local function flush()
-    if writefile then
+    if appendfile then
         local dump = table.concat(fullLog, "\n")
-        pcall(function() writefile("dump.txt", dump) end)
+        pcall(function() appendfile("dump.txt", dump .. "\n") end)
+        fullLog = {}
+        guiLog = {}
+    else
+        table.insert(guiLog, "[❌] appendfile/writefile saknas i denna executor")
+        box.Text = table.concat(guiLog, "\n")
     end
-    guiLog = {}
-    fullLog = {}
 end
 
 local function add(txt)
@@ -115,14 +118,6 @@ dumpBtn.MouseButton1Click:Connect(function()
                 add("🔄 Funktioner behandlade: " .. count)
                 task.wait(0.05)
             end
-        end
-    end
-
-    -- Extra objekt
-    add("[📜] Script & prompt-data:")
-    for _, obj in pairs(game:GetDescendants()) do
-        if obj:IsA("Script") or obj:IsA("LocalScript") or obj:IsA("ModuleScript") or obj:IsA("ProximityPrompt") or obj:IsA("ClickDetector") or obj:IsA("Tool") then
-            add("📦 " .. obj.ClassName .. " ➜ " .. obj:GetFullName())
         end
     end
 
