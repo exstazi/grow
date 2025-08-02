@@ -2,7 +2,7 @@ local player = game.Players.LocalPlayer
 
 -- GUI
 local gui = Instance.new("ScreenGui", player.PlayerGui)
-gui.Name = "MobilDumpConsole"
+gui.Name = "SafeDumpGui"
 gui.ResetOnSpawn = false
 
 local dumpBox = Instance.new("TextBox", gui)
@@ -17,7 +17,8 @@ dumpBox.MultiLine = true
 dumpBox.TextWrapped = true
 dumpBox.TextEditable = false
 dumpBox.TextYAlignment = Enum.TextYAlignment.Top
-dumpBox.Text = "[📲] Klar. Tryck på DUMPA ALLT."
+dumpBox.Text = "[📲] Tryck på DUMPA ALLT."
+dumpBox.Visible = true
 
 local dumpButton = Instance.new("TextButton", gui)
 dumpButton.Size = UDim2.new(0.6, 0, 0.08, 0)
@@ -45,53 +46,56 @@ toggleButton.MouseButton1Click:Connect(function()
     toggleButton.Text = shown and "🔽" or "🔼"
 end)
 
--- Dumpfunktion
+-- Dumpfunktion med skrivning till dump.txt
+local function logInit()
+    writefile("dump.txt", "[📲] Startar dump...\n\n")
+end
+
+local lineCount = 0
+local logText = ""
+
+local function logLine(text)
+    lineCount += 1
+    logText ..= text .. "\n"
+
+    -- Skriv till dump.txt varje 100:e rad
+    if lineCount % 100 == 0 then
+        writefile("dump.txt", logText)
+    end
+
+    -- Visa bara senaste 100 rader i GUI
+    local lines = string.split(logText, "\n")
+    local recent = {}
+    for i = math.max(1, #lines - 100), #lines do
+        table.insert(recent, lines[i])
+    end
+    dumpBox.Text = table.concat(recent, "\n")
+end
+
+-- Start dump
 dumpButton.MouseButton1Click:Connect(function()
     dumpButton.Text = "DUMPAR..."
-    dumpBox.Text = "[⏳] Startar dump...\n\n"
-    task.wait(0.1)
+    dumpBox.Text = "[⏳] Påbörjar dump..."
+    logInit()
 
     local count = 0
 
-    local function log(txt)
-        dumpBox.Text ..= txt.."\n"
-        count += 1
-        task.wait(0.001)
-    end
-
-    -- Remotes
-    dumpBox.Text ..= "[📡] Remotes:\n"
     for _, obj in pairs(game:GetDescendants()) do
         if obj:IsA("RemoteEvent") or obj:IsA("RemoteFunction") then
-            log(obj.ClassName.." ➜ "..obj:GetFullName())
+            logLine("📡 "..obj.ClassName.." ➜ "..obj:GetFullName())
+        elseif obj:IsA("TextButton") or obj:IsA("ImageButton") then
+            logLine("🖱️ "..obj.ClassName.." ➜ "..obj:GetFullName())
+        elseif obj:IsA("ModuleScript") then
+            logLine("📚 Module ➜ "..obj:GetFullName())
+        elseif obj:IsA("ProximityPrompt") or obj:IsA("ClickDetector") or obj:IsA("Tool") or obj:IsA("BindableEvent") or obj:IsA("BindableFunction") or obj:IsA("LocalScript") or obj:IsA("Script") then
+            logLine("🧲 "..obj.ClassName.." ➜ "..obj:GetFullName())
         end
+        task.wait(0.001)
+        count += 1
     end
 
-    -- Knappar
-    dumpBox.Text ..= "\n[🖱️] GUI-knappar:\n"
-    for _, btn in pairs(game:GetDescendants()) do
-        if btn:IsA("TextButton") or btn:IsA("ImageButton") then
-            log(btn.ClassName.." ➜ "..btn:GetFullName())
-        end
-    end
-
-    -- Moduler
-    dumpBox.Text ..= "\n[📚] ModuleScripts:\n"
-    for _, mod in pairs(game:GetDescendants()) do
-        if mod:IsA("ModuleScript") then
-            log("Module ➜ "..mod:GetFullName())
-        end
-    end
-
-    -- Extra (ProximityPrompt, ClickDetector, Tools, Scripts)
-    dumpBox.Text ..= "\n[🧲] Proximity/Tools/etc:\n"
-    for _, obj in pairs(game:GetDescendants()) do
-        if obj:IsA("ProximityPrompt") or obj:IsA("ClickDetector") or obj:IsA("Tool") or obj:IsA("BindableEvent") or obj:IsA("BindableFunction") or obj:IsA("LocalScript") or obj:IsA("Script") then
-            log(obj.ClassName.." ➜ "..obj:GetFullName())
-        end
-    end
-
-    dumpBox.Text ..= "\n[✅] KLAR – "..count.." objekt dumpade."
+    writefile("dump.txt", logText)
+    logLine("\n✅ KLAR – "..count.." objekt dumpade.")
     dumpButton.Text = "KLAR ✔️"
     dumpButton.BackgroundColor3 = Color3.fromRGB(0, 170, 0)
 end)
