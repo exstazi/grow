@@ -1,8 +1,8 @@
 local player = game.Players.LocalPlayer
 
--- GUI-setup
+-- GUI
 local gui = Instance.new("ScreenGui", player.PlayerGui)
-gui.Name = "ComboDumperFull"
+gui.Name = "ComboDumperSafe"
 gui.ResetOnSpawn = false
 
 local box = Instance.new("TextBox", gui)
@@ -17,7 +17,7 @@ box.MultiLine = true
 box.TextWrapped = true
 box.TextEditable = false
 box.TextYAlignment = Enum.TextYAlignment.Top
-box.Text = "[🚀] Kombo-dumper med FULL LOGG aktiv..."
+box.Text = "[🚀] MOBIL-SÄKER Kombo-Dumper laddad..."
 box.Visible = true
 
 -- Knappar
@@ -57,7 +57,7 @@ toggleBtn.TextScaled = true
 toggleBtn.Font = Enum.Font.SourceSans
 toggleBtn.Text = "🔽"
 
--- Loggar
+-- Logg
 local guiLog, fullLog, lineCount, spying, visible = {}, {}, 0, false, true
 
 local function add(txt)
@@ -86,31 +86,35 @@ saveBtn.MouseButton1Click:Connect(function()
     end
 end)
 
--- Dumpknapp: getgc + scripts + prompts
+-- Dumpa: med task.wait och tydlig progress
 dumpBtn.MouseButton1Click:Connect(function()
-    dumpBtn.Text = "Dump..."
-    add("[🧠] getgc + scriptdata...")
+    dumpBtn.Text = "⏳..."
+    add("[🧠] Säker getgc-dump startar...")
 
+    local count = 0
     for _, f in pairs(getgc(true)) do
         if typeof(f) == "function" and not is_synapse_function and not isexecutorclosure(f) then
             local ok, consts = pcall(getconstants, f)
             if ok then
-                pcall(function()
-                    local i = debug.getinfo(f)
-                    if i and i.source then
-                        add("📄 [" .. (i.short_src or i.source) .. "]")
-                    end
-                end)
+                local infoOk, info = pcall(debug.getinfo, f)
+                if infoOk and info and info.source then
+                    add("📄 [" .. (info.short_src or info.source) .. "]")
+                end
                 for _, c in pairs(consts) do
                     if typeof(c) == "string" and #c < 200 then
                         add("🧠 " .. c)
                     end
                 end
             end
+            count += 1
+            if count % 10 == 0 then
+                add("🔄 Funktioner behandlade: " .. count)
+                task.wait(0.05)
+            end
         end
     end
 
-    -- Extra: Scripts, Prompts, Clicks, Tools
+    -- Extra dump
     add("[📜] Script & prompt-data:")
     for _, obj in pairs(game:GetDescendants()) do
         if obj:IsA("Script") or obj:IsA("LocalScript") or obj:IsA("ModuleScript") or obj:IsA("ProximityPrompt") or obj:IsA("ClickDetector") or obj:IsA("Tool") then
@@ -118,7 +122,7 @@ dumpBtn.MouseButton1Click:Connect(function()
         end
     end
 
-    add("[✅] Dump klar.")
+    add("[✅] Full dump klar.")
     dumpBtn.Text = "Klar ✔"
 end)
 
