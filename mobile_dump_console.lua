@@ -1,13 +1,14 @@
 local player = game.Players.LocalPlayer
 
--- Skapa mobil-konsol GUI
+-- GUI
 local gui = Instance.new("ScreenGui", player.PlayerGui)
 gui.Name = "MobilDumpConsole"
+gui.ResetOnSpawn = false
 
 local dumpBox = Instance.new("TextBox", gui)
-dumpBox.Size = UDim2.new(0.95, 0, 0.75, 0)
-dumpBox.Position = UDim2.new(0.025, 0, 0.15, 0)
-dumpBox.BackgroundColor3 = Color3.fromRGB(15, 15, 15)
+dumpBox.Size = UDim2.new(0.95, 0, 0.65, 0)
+dumpBox.Position = UDim2.new(0.025, 0, 0.2, 0)
+dumpBox.BackgroundColor3 = Color3.fromRGB(10, 10, 10)
 dumpBox.TextColor3 = Color3.new(1,1,1)
 dumpBox.Font = Enum.Font.Code
 dumpBox.TextSize = 14
@@ -16,55 +17,81 @@ dumpBox.MultiLine = true
 dumpBox.TextWrapped = true
 dumpBox.TextEditable = false
 dumpBox.TextYAlignment = Enum.TextYAlignment.Top
-dumpBox.Text = "[🟢] Mobil dump-konsol redo. Klicka på DUMPA."
+dumpBox.Text = "[📲] Klar. Tryck på DUMPA ALLT."
 
-local button = Instance.new("TextButton", gui)
-button.Size = UDim2.new(0.5, 0, 0.08, 0)
-button.Position = UDim2.new(0.25, 0, 0.05, 0)
-button.BackgroundColor3 = Color3.fromRGB(0, 150, 255)
-button.TextColor3 = Color3.new(1,1,1)
-button.TextScaled = true
-button.Font = Enum.Font.SourceSansBold
-button.Text = "DUMPA ALLT"
+local dumpButton = Instance.new("TextButton", gui)
+dumpButton.Size = UDim2.new(0.6, 0, 0.08, 0)
+dumpButton.Position = UDim2.new(0.2, 0, 0.05, 0)
+dumpButton.BackgroundColor3 = Color3.fromRGB(0, 150, 255)
+dumpButton.TextColor3 = Color3.new(1,1,1)
+dumpButton.TextScaled = true
+dumpButton.Font = Enum.Font.SourceSansBold
+dumpButton.Text = "DUMPA ALLT"
 
--- Mobil dump-funktion utan riskabla getgc()
-local function dumpAll()
-	button.Text = "DUMPAR..."
-	button.BackgroundColor3 = Color3.fromRGB(255, 170, 0)
-	dumpBox.Text = "[⏳] Dump startad...\n\n"
+local toggleButton = Instance.new("TextButton", gui)
+toggleButton.Size = UDim2.new(0.15, 0, 0.05, 0)
+toggleButton.Position = UDim2.new(0.82, 0, 0.9, 0)
+toggleButton.BackgroundColor3 = Color3.fromRGB(60, 60, 60)
+toggleButton.TextColor3 = Color3.new(1,1,1)
+toggleButton.TextScaled = true
+toggleButton.Font = Enum.Font.SourceSans
+toggleButton.Text = "🔽"
 
-	local count = 0
+-- Toggle-funktion
+local shown = true
+toggleButton.MouseButton1Click:Connect(function()
+    shown = not shown
+    dumpBox.Visible = shown
+    toggleButton.Text = shown and "🔽" or "🔼"
+end)
 
-	-- RemoteEvents & RemoteFunctions
-	dumpBox.Text ..= "[📡] Remotes:\n"
-	for _, obj in pairs(game:GetDescendants()) do
-		if obj:IsA("RemoteEvent") or obj:IsA("RemoteFunction") then
-			dumpBox.Text ..= obj.ClassName.." ➜ "..obj:GetFullName().."\n"
-			count += 1
-		end
-	end
+-- Dumpfunktion
+dumpButton.MouseButton1Click:Connect(function()
+    dumpButton.Text = "DUMPAR..."
+    dumpBox.Text = "[⏳] Startar dump...\n\n"
+    task.wait(0.1)
 
-	-- GUI-knappar
-	dumpBox.Text ..= "\n[🖱️] Knappar:\n"
-	for _, btn in pairs(game:GetDescendants()) do
-		if btn:IsA("TextButton") or btn:IsA("ImageButton") then
-			dumpBox.Text ..= btn.ClassName.." ➜ "..btn:GetFullName().."\n"
-			count += 1
-		end
-	end
+    local count = 0
 
-	-- ModuleScripts
-	dumpBox.Text ..= "\n[📚] Moduler:\n"
-	for _, mod in pairs(game:GetDescendants()) do
-		if mod:IsA("ModuleScript") then
-			dumpBox.Text ..= "Module ➜ "..mod:GetFullName().."\n"
-			count += 1
-		end
-	end
+    local function log(txt)
+        dumpBox.Text ..= txt.."\n"
+        count += 1
+        task.wait(0.001)
+    end
 
-	dumpBox.Text ..= "\n[✅] KLAR – "..count.." objekt dumpade."
-	button.Text = "KLAR ✔️"
-	button.BackgroundColor3 = Color3.fromRGB(0, 170, 0)
-end
+    -- Remotes
+    dumpBox.Text ..= "[📡] Remotes:\n"
+    for _, obj in pairs(game:GetDescendants()) do
+        if obj:IsA("RemoteEvent") or obj:IsA("RemoteFunction") then
+            log(obj.ClassName.." ➜ "..obj:GetFullName())
+        end
+    end
 
-button.MouseButton1Click:Connect(dumpAll)
+    -- Knappar
+    dumpBox.Text ..= "\n[🖱️] GUI-knappar:\n"
+    for _, btn in pairs(game:GetDescendants()) do
+        if btn:IsA("TextButton") or btn:IsA("ImageButton") then
+            log(btn.ClassName.." ➜ "..btn:GetFullName())
+        end
+    end
+
+    -- Moduler
+    dumpBox.Text ..= "\n[📚] ModuleScripts:\n"
+    for _, mod in pairs(game:GetDescendants()) do
+        if mod:IsA("ModuleScript") then
+            log("Module ➜ "..mod:GetFullName())
+        end
+    end
+
+    -- Extra (ProximityPrompt, ClickDetector, Tools, Scripts)
+    dumpBox.Text ..= "\n[🧲] Proximity/Tools/etc:\n"
+    for _, obj in pairs(game:GetDescendants()) do
+        if obj:IsA("ProximityPrompt") or obj:IsA("ClickDetector") or obj:IsA("Tool") or obj:IsA("BindableEvent") or obj:IsA("BindableFunction") or obj:IsA("LocalScript") or obj:IsA("Script") then
+            log(obj.ClassName.." ➜ "..obj:GetFullName())
+        end
+    end
+
+    dumpBox.Text ..= "\n[✅] KLAR – "..count.." objekt dumpade."
+    dumpButton.Text = "KLAR ✔️"
+    dumpButton.BackgroundColor3 = Color3.fromRGB(0, 170, 0)
+end)
