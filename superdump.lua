@@ -19,6 +19,7 @@ box.TextWrapped = true
 box.TextEditable = false
 box.TextYAlignment = Enum.TextYAlignment.Top
 box.Text = "[🧠] Superdump redo – klicka för att börja"
+box.Visible = true
 
 local dumpBtn = Instance.new("TextButton", gui)
 dumpBtn.Size = UDim2.new(0.6, 0, 0.08, 0)
@@ -121,5 +122,24 @@ local function superDump()
     dumpBtn.Text = "KLAR ✔"
     dumpBtn.BackgroundColor3 = Color3.fromRGB(0, 170, 0)
 end
+
+-- Spara manuellt-knapp
+local saveBtn = Instance.new("TextButton", gui)
+saveBtn.Size = UDim2.new(0.25, 0, 0.05, 0)
+saveBtn.Position = UDim2.new(0.05, 0, 0.9, 0)
+saveBtn.BackgroundColor3 = Color3.fromRGB(30, 150, 30)
+saveBtn.TextColor3 = Color3.new(1,1,1)
+saveBtn.TextScaled = true
+saveBtn.Font = Enum.Font.SourceSansBold
+saveBtn.Text = "💾 SPARA"
+
+saveBtn.MouseButton1Click:Connect(function()
+    if #log > 0 then
+        writefile("superdump.txt", table.concat(log, "\n"))
+        box.Text = box.Text .. "\n[💾] Sparat manuellt!"
+    else
+        box.Text = box.Text .. "\n[⚠️] Ingen dump att spara ännu!"
+    end
+end)
 
 dumpBtn.MouseButton1Click:Connect(superDump)
