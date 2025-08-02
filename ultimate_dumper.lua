@@ -2,7 +2,7 @@ local player = game.Players.LocalPlayer
 
 -- GUI-setup
 local gui = Instance.new("ScreenGui", player.PlayerGui)
-gui.Name = "UltimateDumper"
+gui.Name = "ComboDumper"
 gui.ResetOnSpawn = false
 
 local box = Instance.new("TextBox", gui)
@@ -17,49 +17,48 @@ box.MultiLine = true
 box.TextWrapped = true
 box.TextEditable = false
 box.TextYAlignment = Enum.TextYAlignment.Top
-box.Text = "[🚀] Ultimate Dumper aktiv..."
+box.Text = "[🚀] Kombo-dumper laddad..."
 box.Visible = true
 
-local dumpButton = Instance.new("TextButton", gui)
-dumpButton.Size = UDim2.new(0.3, 0, 0.06, 0)
-dumpButton.Position = UDim2.new(0.05, 0, 0.05, 0)
-dumpButton.BackgroundColor3 = Color3.fromRGB(0, 150, 255)
-dumpButton.TextColor3 = Color3.new(1, 1, 1)
-dumpButton.TextScaled = true
-dumpButton.Font = Enum.Font.SourceSansBold
-dumpButton.Text = "📦 Dumpa"
+-- Knappar
+local dumpBtn = Instance.new("TextButton", gui)
+dumpBtn.Size = UDim2.new(0.28, 0, 0.06, 0)
+dumpBtn.Position = UDim2.new(0.05, 0, 0.05, 0)
+dumpBtn.BackgroundColor3 = Color3.fromRGB(0, 150, 255)
+dumpBtn.TextColor3 = Color3.new(1, 1, 1)
+dumpBtn.TextScaled = true
+dumpBtn.Font = Enum.Font.SourceSansBold
+dumpBtn.Text = "📦 Dumpa"
 
-local spyButton = Instance.new("TextButton", gui)
-spyButton.Size = UDim2.new(0.3, 0, 0.06, 0)
-spyButton.Position = UDim2.new(0.35, 0, 0.05, 0)
-spyButton.BackgroundColor3 = Color3.fromRGB(60, 60, 60)
-spyButton.TextColor3 = Color3.new(1, 1, 1)
-spyButton.TextScaled = true
-spyButton.Font = Enum.Font.SourceSansBold
-spyButton.Text = "🕵️ Spion"
+local spyBtn = Instance.new("TextButton", gui)
+spyBtn.Size = UDim2.new(0.28, 0, 0.06, 0)
+spyBtn.Position = UDim2.new(0.36, 0, 0.05, 0)
+spyBtn.BackgroundColor3 = Color3.fromRGB(60, 60, 60)
+spyBtn.TextColor3 = Color3.new(1, 1, 1)
+spyBtn.TextScaled = true
+spyBtn.Font = Enum.Font.SourceSansBold
+spyBtn.Text = "🕵️ Spion"
 
-local saveButton = Instance.new("TextButton", gui)
-saveButton.Size = UDim2.new(0.25, 0, 0.06, 0)
-saveButton.Position = UDim2.new(0.68, 0, 0.05, 0)
-saveButton.BackgroundColor3 = Color3.fromRGB(0, 200, 100)
-saveButton.TextColor3 = Color3.new(1, 1, 1)
-saveButton.TextScaled = true
-saveButton.Font = Enum.Font.SourceSansBold
-saveButton.Text = "💾 Spara"
+local saveBtn = Instance.new("TextButton", gui)
+saveBtn.Size = UDim2.new(0.28, 0, 0.06, 0)
+saveBtn.Position = UDim2.new(0.67, 0, 0.05, 0)
+saveBtn.BackgroundColor3 = Color3.fromRGB(0, 200, 100)
+saveBtn.TextColor3 = Color3.new(1, 1, 1)
+saveBtn.TextScaled = true
+saveBtn.Font = Enum.Font.SourceSansBold
+saveBtn.Text = "💾 Spara"
 
-local toggleButton = Instance.new("TextButton", gui)
-toggleButton.Size = UDim2.new(0.1, 0, 0.05, 0)
-toggleButton.Position = UDim2.new(0.9, 0, 0.87, 0)
-toggleButton.BackgroundColor3 = Color3.fromRGB(100, 100, 100)
-toggleButton.TextColor3 = Color3.new(1, 1, 1)
-toggleButton.TextScaled = true
-toggleButton.Font = Enum.Font.SourceSans
-toggleButton.Text = "🔽"
+local toggleBtn = Instance.new("TextButton", gui)
+toggleBtn.Size = UDim2.new(0.1, 0, 0.05, 0)
+toggleBtn.Position = UDim2.new(0.9, 0, 0.87, 0)
+toggleBtn.BackgroundColor3 = Color3.fromRGB(100, 100, 100)
+toggleBtn.TextColor3 = Color3.new(1, 1, 1)
+toggleBtn.TextScaled = true
+toggleBtn.Font = Enum.Font.SourceSans
+toggleBtn.Text = "🔽"
 
-local log = {}
-local lineCount = 0
-local spying = false
-local boxVisible = true
+-- Variabler
+local log, lineCount, spying, visible = {}, 0, false, true
 
 local function add(txt)
     lineCount += 1
@@ -68,29 +67,29 @@ local function add(txt)
     box.Text = table.concat(log, "\n")
 end
 
-toggleButton.MouseButton1Click:Connect(function()
-    boxVisible = not boxVisible
-    box.Visible = boxVisible
-    toggleButton.Text = boxVisible and "🔽" or "🔼"
+toggleBtn.MouseButton1Click:Connect(function()
+    visible = not visible
+    box.Visible = visible
+    toggleBtn.Text = visible and "🔽" or "🔼"
 end)
 
-saveButton.MouseButton1Click:Connect(function()
+saveBtn.MouseButton1Click:Connect(function()
     if writefile then
         pcall(function()
             writefile("dump.txt", table.concat(log, "\n"))
-            saveButton.Text = "✔ Sparad"
-            task.delay(2, function() saveButton.Text = "💾 Spara" end)
+            saveBtn.Text = "✔ Sparad"
+            task.delay(2, function() saveBtn.Text = "💾 Spara" end)
         end)
     else
-        box.Text = "[❌] writefile stöds inte i denna executor."
+        add("[❌] writefile saknas.")
     end
 end)
 
-dumpButton.MouseButton1Click:Connect(function()
-    dumpButton.Text = "Dump..."
-    add("[🧠] Startar djupdump med getgc...")
+-- Dumpknapp: getgc + scripts + prompts
+dumpBtn.MouseButton1Click:Connect(function()
+    dumpBtn.Text = "Dump..."
+    add("[🧠] getgc + scriptdata...")
 
-    local count = 0
     for _, f in pairs(getgc(true)) do
         if typeof(f) == "function" and not is_synapse_function and not isexecutorclosure(f) then
             local ok, consts = pcall(getconstants, f)
@@ -106,20 +105,27 @@ dumpButton.MouseButton1Click:Connect(function()
                         add("🧠 " .. c)
                     end
                 end
-                count += 1
-                if count % 100 == 0 then task.wait(0.1) end
             end
         end
     end
-    add("[✅] Djupdump klar.")
-    dumpButton.Text = "Klar ✔"
+
+    -- Extra: Scripts, Prompts, Clicks, Tools
+    add("[📜] Script & prompt-data:")
+    for _, obj in pairs(game:GetDescendants()) do
+        if obj:IsA("Script") or obj:IsA("LocalScript") or obj:IsA("ModuleScript") or obj:IsA("ProximityPrompt") or obj:IsA("ClickDetector") or obj:IsA("Tool") then
+            add("📦 " .. obj.ClassName .. " ➜ " .. obj:GetFullName())
+        end
+    end
+
+    add("[✅] Dump klar.")
+    dumpBtn.Text = "Klar ✔"
 end)
 
--- namecall hook
+-- Spy på RemoteEvents
 local originalNamecall
-spyButton.MouseButton1Click:Connect(function()
+spyBtn.MouseButton1Click:Connect(function()
     spying = not spying
-    spyButton.Text = spying and "🛑 Stoppa" or "🕵️ Spion"
+    spyBtn.Text = spying and "🛑 Stoppa" or "🕵️ Spion"
     if spying and not originalNamecall then
         originalNamecall = hookmetamethod(game, "__namecall", function(self, ...)
             local method = getnamecallmethod()
