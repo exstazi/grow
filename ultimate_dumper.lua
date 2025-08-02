@@ -1,14 +1,14 @@
 local player = game.Players.LocalPlayer
 
--- GUI Setup
+-- GUI
 local gui = Instance.new("ScreenGui", player.PlayerGui)
-gui.Name = "SuperDumpFinal"
+gui.Name = "ComboDumperToggle"
 gui.ResetOnSpawn = false
 
 local box = Instance.new("TextBox", gui)
-box.Size = UDim2.new(0.95, 0, 0.5, 0)
+box.Size = UDim2.new(0.95, 0, 0.55, 0)
 box.Position = UDim2.new(0.025, 0, 0.25, 0)
-box.BackgroundColor3 = Color3.fromRGB(20, 20, 20)
+box.BackgroundColor3 = Color3.fromRGB(10, 10, 10)
 box.TextColor3 = Color3.new(1, 1, 1)
 box.Font = Enum.Font.Code
 box.TextSize = 14
@@ -17,101 +17,139 @@ box.MultiLine = true
 box.TextWrapped = true
 box.TextEditable = false
 box.TextYAlignment = Enum.TextYAlignment.Top
-box.Text = "[🚀] SUPERDUMP FINAL laddad – redo..."
-box.Visible = true
-box.ZIndex = 5
+box.Text = "[🚀] Kombo-Dumper (console toggle)..."
+box.Visible = false -- döljs tills du spionerar
 
-local toggleBtn = Instance.new("TextButton", gui)
-toggleBtn.Size = UDim2.new(0.08, 0, 0.05, 0)
-toggleBtn.Position = UDim2.new(0.91, 0, 0.2, 0)
-toggleBtn.BackgroundColor3 = Color3.fromRGB(255, 200, 0)
-toggleBtn.TextColor3 = Color3.new(0, 0, 0)
-toggleBtn.TextScaled = true
-toggleBtn.Font = Enum.Font.SourceSansBold
-toggleBtn.Text = "🔽"
-toggleBtn.ZIndex = 6
+-- Räkneetikett
+local counterLabel = Instance.new("TextLabel", gui)
+counterLabel.Size = UDim2.new(0.9, 0, 0.06, 0)
+counterLabel.Position = UDim2.new(0.05, 0, 0.83, 0)
+counterLabel.BackgroundTransparency = 1
+counterLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
+counterLabel.TextScaled = true
+counterLabel.Font = Enum.Font.SourceSansBold
+counterLabel.Text = ""
+counterLabel.Visible = false
 
+-- Knappar
 local dumpBtn = Instance.new("TextButton", gui)
-dumpBtn.Size = UDim2.new(0.3, 0, 0.06, 0)
+dumpBtn.Size = UDim2.new(0.28, 0, 0.06, 0)
 dumpBtn.Position = UDim2.new(0.05, 0, 0.05, 0)
 dumpBtn.BackgroundColor3 = Color3.fromRGB(0, 150, 255)
 dumpBtn.TextColor3 = Color3.new(1, 1, 1)
 dumpBtn.TextScaled = true
 dumpBtn.Font = Enum.Font.SourceSansBold
 dumpBtn.Text = "📦 Dumpa"
-dumpBtn.ZIndex = 5
+
+local spyBtn = Instance.new("TextButton", gui)
+spyBtn.Size = UDim2.new(0.28, 0, 0.06, 0)
+spyBtn.Position = UDim2.new(0.36, 0, 0.05, 0)
+spyBtn.BackgroundColor3 = Color3.fromRGB(60, 60, 60)
+spyBtn.TextColor3 = Color3.new(1, 1, 1)
+spyBtn.TextScaled = true
+spyBtn.Font = Enum.Font.SourceSansBold
+spyBtn.Text = "🕵️ Spion"
 
 local saveBtn = Instance.new("TextButton", gui)
-saveBtn.Size = UDim2.new(0.3, 0, 0.06, 0)
-saveBtn.Position = UDim2.new(0.36, 0, 0.05, 0)
+saveBtn.Size = UDim2.new(0.28, 0, 0.06, 0)
+saveBtn.Position = UDim2.new(0.67, 0, 0.05, 0)
 saveBtn.BackgroundColor3 = Color3.fromRGB(0, 200, 100)
 saveBtn.TextColor3 = Color3.new(1, 1, 1)
 saveBtn.TextScaled = true
 saveBtn.Font = Enum.Font.SourceSansBold
 saveBtn.Text = "💾 Spara"
-saveBtn.ZIndex = 5
 
--- Logik
-local log = {}
-local visible = true
+-- Loggar
+local guiLog, fullLog, lineCount, spying = {}, {}, 0, false
 
 local function add(txt)
-    table.insert(log, txt)
-    if #log % 200 == 0 then
-        local view = log[#log - 199] and table.concat(log, "\n", #log - 199) or table.concat(log, "\n")
-        box.Text = view
-        task.wait(0.01)
-    end
+    lineCount += 1
+    table.insert(fullLog, txt)
+    table.insert(guiLog, txt)
+    if #guiLog > 300 then table.remove(guiLog, 1) end
+    box.Text = table.concat(guiLog, "\n")
 end
-
-toggleBtn.MouseButton1Click:Connect(function()
-    visible = not visible
-    box.Visible = visible
-    toggleBtn.Text = visible and "🔽" or "🔼"
-end)
 
 saveBtn.MouseButton1Click:Connect(function()
     if writefile then
         pcall(function()
-            writefile("superdump.txt", table.concat(log, "\n"))
-            add("[💾] Sparad till superdump.txt")
+            writefile("dump.txt", table.concat(fullLog, "\n"))
+            saveBtn.Text = "✔ Sparad"
+            task.delay(2, function() saveBtn.Text = "💾 Spara" end)
         end)
     else
-        add("[❌] writefile saknas i executor")
+        add("[❌] writefile saknas.")
     end
 end)
 
--- Dumpfunktion
+-- Dumpa med räknare istället för konsol
 dumpBtn.MouseButton1Click:Connect(function()
-    dumpBtn.Text = "⏳ Dumpar..."
-    add("[🔍] Börjar objekt-dump...")
+    dumpBtn.Text = "⏳..."
+    box.Visible = false
+    counterLabel.Visible = true
+    counterLabel.Text = "🔄 Startar dump..."
 
-    for _, obj in pairs(game:GetDescendants()) do
-        if obj:IsA("RemoteEvent") or obj:IsA("RemoteFunction") or obj:IsA("BindableFunction")
-        or obj:IsA("BindableEvent") or obj:IsA("Script") or obj:IsA("LocalScript")
-        or obj:IsA("ModuleScript") or obj:IsA("Tool") or obj:IsA("ProximityPrompt") then
-            add("📦 " .. obj.ClassName .. " ➜ " .. obj:GetFullName())
-        end
-    end
-
-    add("[🔬] Börjar getgc-dump...")
     local count = 0
-
     for _, f in pairs(getgc(true)) do
-        if typeof(f) == "function" and not isexecutorclosure(f) then
+        if typeof(f) == "function" and not is_synapse_function and not isexecutorclosure(f) then
             local ok, consts = pcall(getconstants, f)
             if ok then
+                local infoOk, info = pcall(debug.getinfo, f)
+                if infoOk and info and info.source then
+                    table.insert(fullLog, "📄 [" .. (info.short_src or info.source) .. "]")
+                end
                 for _, c in pairs(consts) do
                     if typeof(c) == "string" and #c < 200 then
-                        add("🧠 " .. c)
-                        count += 1
-                        if count % 50 == 0 then add("🔄 "..count.." konstanter...") end
+                        table.insert(fullLog, "🧠 " .. c)
                     end
                 end
+            end
+            count += 1
+            if count % 10 == 0 then
+                counterLabel.Text = "🔄 Funktioner: " .. count
+                task.wait(0.05)
             end
         end
     end
 
-    add("[✅] DUMP KLAR – "..count.." konstanter")
-    dumpBtn.Text = "KLAR ✔"
+    -- Extra objekt
+    for _, obj in pairs(game:GetDescendants()) do
+        if obj:IsA("Script") or obj:IsA("LocalScript") or obj:IsA("ModuleScript") or obj:IsA("ProximityPrompt") or obj:IsA("ClickDetector") or obj:IsA("Tool") then
+            table.insert(fullLog, "📦 " .. obj.ClassName .. " ➜ " .. obj:GetFullName())
+        end
+    end
+
+    counterLabel.Text = "✅ Dump klar – " .. count .. " funktioner"
+    dumpBtn.Text = "Klar ✔"
+end)
+
+-- Spy visar logg igen
+local originalNamecall
+spyBtn.MouseButton1Click:Connect(function()
+    spying = not spying
+    spyBtn.Text = spying and "🛑 Stoppa" or "🕵️ Spion"
+    box.Visible = spying
+    counterLabel.Visible = not spying
+    if spying and not originalNamecall then
+        originalNamecall = hookmetamethod(game, "__namecall", function(self, ...)
+            local method = getnamecallmethod()
+            local args = {...}
+            if spying and (method == "FireServer" or method == "InvokeServer") then
+                local argDump = ""
+                for i,v in ipairs(args) do
+                    if typeof(v) == "string" then
+                        argDump ..= "\""..v.."\""
+                    elseif typeof(v) == "Instance" then
+                        argDump ..= v:GetFullName()
+                    else
+                        argDump ..= tostring(v)
+                    end
+                    if i < #args then argDump ..= ", " end
+                end
+                local line = "["..method.."] " .. self:GetFullName() .. "(" .. argDump .. ")"
+                add(line)
+            end
+            return originalNamecall(self, ...)
+        end)
+    end
 end)
