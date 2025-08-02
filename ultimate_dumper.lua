@@ -2,7 +2,7 @@ local player = game.Players.LocalPlayer
 
 -- GUI
 local gui = Instance.new("ScreenGui", player.PlayerGui)
-gui.Name = "ComboDumperSafe"
+gui.Name = "ComboDumperAppendSafe"
 gui.ResetOnSpawn = false
 
 local box = Instance.new("TextBox", gui)
@@ -17,7 +17,7 @@ box.MultiLine = true
 box.TextWrapped = true
 box.TextEditable = false
 box.TextYAlignment = Enum.TextYAlignment.Top
-box.Text = "[🚀] Kombo-Dumper (writefile-version laddad)..."
+box.Text = "[🚀] Kombo-Dumper: APPEND om möjligt"
 box.Visible = true
 
 -- Knappar
@@ -59,21 +59,21 @@ toggleBtn.Text = "🔽"
 
 -- Logg
 local guiLog, fullLog, lineCount, spying, visible = {}, {}, 0, false, true
-
--- Kontrollera direkt om writefile saknas
-if not writefile then
-    box.Text = box.Text .. "\n[❌] Din executor stöder inte writefile – ingen autosparning!"
-end
-
 local function flush()
-    if writefile then
-        local dump = table.concat(fullLog, "\n")
-        pcall(function() writefile("dump.txt", dump) end)
-        fullLog = {}
-        guiLog = {}
+    local dump = table.concat(fullLog, "\n") .. "\n"
+    if appendfile then
+        pcall(function() appendfile("dump.txt", dump) end)
+    elseif writefile then
+        pcall(function()
+            local prev = ""
+            local exists = pcall(function() prev = readfile("dump.txt") end)
+            writefile("dump.txt", prev .. dump)
+        end)
     else
-        box.Text = box.Text .. "\n[❌] writefile saknas vid sparförsök"
+        box.Text = box.Text .. "\n[❌] Varken appendfile eller writefile finns"
     end
+    fullLog = {}
+    guiLog = {}
 end
 
 local function add(txt)
@@ -97,10 +97,10 @@ saveBtn.MouseButton1Click:Connect(function()
     task.delay(2, function() saveBtn.Text = "💾 Spara" end)
 end)
 
--- Dumpa
+-- Dump
 dumpBtn.MouseButton1Click:Connect(function()
     dumpBtn.Text = "⏳..."
-    add("[🧠] getgc-dump påbörjad...")
+    add("[🧠] getgc-dump startar...")
 
     local count = 0
     for _, f in pairs(getgc(true)) do
@@ -124,7 +124,6 @@ dumpBtn.MouseButton1Click:Connect(function()
             end
         end
     end
-
     add("[✅] Dump klar.")
     dumpBtn.Text = "Klar ✔"
 end)
