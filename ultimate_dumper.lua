@@ -17,7 +17,7 @@ box.MultiLine = true
 box.TextWrapped = true
 box.TextEditable = false
 box.TextYAlignment = Enum.TextYAlignment.Top
-box.Text = "[🚀] Kombo-Dumper (autosave med kontroll)..."
+box.Text = "[🚀] Kombo-Dumper (writefile-version laddad)..."
 box.Visible = true
 
 -- Knappar
@@ -60,15 +60,19 @@ toggleBtn.Text = "🔽"
 -- Logg
 local guiLog, fullLog, lineCount, spying, visible = {}, {}, 0, false, true
 
+-- Kontrollera direkt om writefile saknas
+if not writefile then
+    box.Text = box.Text .. "\n[❌] Din executor stöder inte writefile – ingen autosparning!"
+end
+
 local function flush()
-    if appendfile then
+    if writefile then
         local dump = table.concat(fullLog, "\n")
-        pcall(function() appendfile("dump.txt", dump .. "\n") end)
+        pcall(function() writefile("dump.txt", dump) end)
         fullLog = {}
         guiLog = {}
     else
-        table.insert(guiLog, "[❌] appendfile/writefile saknas i denna executor")
-        box.Text = table.concat(guiLog, "\n")
+        box.Text = box.Text .. "\n[❌] writefile saknas vid sparförsök"
     end
 end
 
@@ -93,10 +97,10 @@ saveBtn.MouseButton1Click:Connect(function()
     task.delay(2, function() saveBtn.Text = "💾 Spara" end)
 end)
 
--- Dumpa med autosave
+-- Dumpa
 dumpBtn.MouseButton1Click:Connect(function()
     dumpBtn.Text = "⏳..."
-    add("[🧠] Säker getgc-dump startar...")
+    add("[🧠] getgc-dump påbörjad...")
 
     local count = 0
     for _, f in pairs(getgc(true)) do
@@ -121,7 +125,7 @@ dumpBtn.MouseButton1Click:Connect(function()
         end
     end
 
-    add("[✅] Full dump klar.")
+    add("[✅] Dump klar.")
     dumpBtn.Text = "Klar ✔"
 end)
 
