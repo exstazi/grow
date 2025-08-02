@@ -1,48 +1,32 @@
--- SEED SHOP
-SeedButton.MouseButton1Click:Connect(function()
-	pcall(function()
+local buttons = {
+	SeedButton = function()
 		game.Players.LocalPlayer.PlayerGui.UI.Seed_Shop.Main.Visible = true
-	end)
-end)
-
--- SELL PROMPT
-SellButton.MouseButton1Click:Connect(function()
-	pcall(function()
+	end,
+	SellButton = function()
 		game.Players.LocalPlayer.PlayerGui.UI.SellPrompt.Visible = true
-	end)
-end)
-
--- TOOL SHOP
-ToolButton.MouseButton1Click:Connect(function()
-	pcall(function()
+	end,
+	ToolButton = function()
 		require(game.ReplicatedStorage.Modules.ToolShopController).open()
-	end)
-end)
-
--- FERTILIZER SHOP
-FertButton.MouseButton1Click:Connect(function()
-	pcall(function()
+	end,
+	FertButton = function()
 		require(game.ReplicatedStorage.Modules.FertilizerShopController).open()
-	end)
-end)
-
--- PET SHOP
-PetButton.MouseButton1Click:Connect(function()
-	pcall(function()
+	end,
+	PetButton = function()
 		require(game.ReplicatedStorage.Modules.ActivePetsUIController).open()
-	end)
-end)
-
--- QUEST
-QuestButton.MouseButton1Click:Connect(function()
-	pcall(function()
+	end,
+	QuestButton = function()
 		game.Players.LocalPlayer.PlayerGui.UI.QuestUI.Visible = true
-	end)
-end)
-
--- EVENT
-EventButton.MouseButton1Click:Connect(function()
-	pcall(function()
+	end,
+	EventButton = function()
 		game.Players.LocalPlayer.PlayerGui.UI.Event_UI.Visible = true
-	end)
-end)
+	end,
+}
+
+for name, action in pairs(buttons) do
+	local button = script.Parent:FindFirstChild(name)
+	if button then
+		button.MouseButton1Click:Connect(function()
+			pcall(action)
+		end)
+	end
+end
